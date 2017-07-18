@@ -150,7 +150,8 @@ public class Realm extends BaseRealm {
      */
     private Realm(RealmCache cache) {
         super(cache);
-        schema = new ImmutableRealmSchema(this);
+        schema = new ImmutableRealmSchema(this,
+                new ColumnIndices(configuration.getSchemaMediator(), sharedRealm.getSchemaInfo()));
     }
 
     /**
@@ -403,6 +404,8 @@ public class Realm extends BaseRealm {
 
         final long requiredVersion = configuration.getSchemaVersion();
 
+        // FIXME: CHECK THIS
+        /*
         final ColumnIndices columnIndices = RealmCache.findColumnIndices(cache.getTypedColumnIndicesArray(),
                 requiredVersion);
 
@@ -410,6 +413,7 @@ public class Realm extends BaseRealm {
             // Copies global cache as a Realm local indices cache.
             realm.schema.setInitialColumnIndices(columnIndices);
         } else {
+        */
             // Initializes Realm schema if needed.
             try {
                 initializeRealm(realm);
@@ -417,7 +421,7 @@ public class Realm extends BaseRealm {
                 realm.doClose();
                 throw e;
             }
-        }
+        //}
 
         return realm;
     }
@@ -471,18 +475,6 @@ public class Realm extends BaseRealm {
                 realm.sharedRealm.updateSchema(schemaInfo, newVersion, migrationCallback);
                 commitChanges = true;
             }
-
-            // Now that they have all been created, validate them.
-            final Map<Pair<Class<? extends RealmModel>, String>, ColumnInfo> columnInfoMap = new HashMap<>(modelClasses.size());
-            for (Class<? extends RealmModel> modelClass : modelClasses) {
-                String className = Table.getClassNameForTable(mediator.getTableName(modelClass));
-                Pair<Class<? extends RealmModel>, String> key = Pair.<Class<? extends RealmModel>, String>create(modelClass, className);
-                // More fields in the Realm than defined is allowed for synced Realm.
-                columnInfoMap.put(key, mediator.validateTable(modelClass, realm.sharedRealm,
-                        configuration.isSyncConfiguration()));
-            }
-
-            realm.getSchema().setInitialColumnIndices(realm.getVersion(), columnInfoMap);
 
             // Finally add any initial data
             final Transaction transaction = configuration.getInitialDataTransaction();
@@ -1695,53 +1687,6 @@ public class Realm extends BaseRealm {
 
     Table getTable(Class<? extends RealmModel> clazz) {
         return schema.getTable(clazz);
-    }
-
-    /**
-     * Updates own schema cache.
-     *
-     * @param globalCacheArray global cache of column indices. If it contains an entry for current
-     * schema version, this method only copies the indices information in the entry.
-     * @return newly created indices information for current schema version. Or {@code null} if {@code globalCacheArray}
-     * already contains the entry for current schema version.
-     */
-    @Nullable
-    ColumnIndices updateSchemaCache(ColumnIndices[] globalCacheArray) {
-        final long currentSchemaVersion = sharedRealm.getSchemaVersion();
-        final long cacheSchemaVersion = schema.getSchemaVersion();
-        if (currentSchemaVersion == cacheSchemaVersion) {
-            return null;
-        }
-
-        ColumnIndices createdGlobalCache = null;
-        ColumnIndices cacheForCurrentVersion = RealmCache.findColumnIndices(globalCacheArray,
-                currentSchemaVersion);
-        if (cacheForCurrentVersion == null) {
-            final RealmProxyMediator mediator = getConfiguration().getSchemaMediator();
-
-            // Not found in global cache. create it.
-            final Set<Class<? extends RealmModel>> modelClasses = mediator.getModelClasses();
-            final Map<Pair<Class<? extends RealmModel>, String>, ColumnInfo> map;
-            map = new HashMap<>(modelClasses.size());
-
-
-            // This code may throw a RealmMigrationNeededException
-            //noinspection CaughtExceptionImmediatelyRethrown
-            try {
-                for (Class<? extends RealmModel> clazz : modelClasses) {
-                    final ColumnInfo columnInfo = mediator.validateTable(clazz, sharedRealm, true);
-                    String className = Table.getClassNameForTable(mediator.getTableName(clazz));
-                    Pair<Class<? extends RealmModel>, String> key = Pair.<Class<? extends RealmModel>, String>create(clazz, className);
-                    map.put(key, columnInfo);
-                }
-            } catch (RealmMigrationNeededException e) {
-                throw e;
-            }
-
-            cacheForCurrentVersion = createdGlobalCache = new ColumnIndices(currentSchemaVersion, map);
-        }
-        schema.updateColumnIndices(cacheForCurrentVersion);
-        return createdGlobalCache;
     }
 
     /**

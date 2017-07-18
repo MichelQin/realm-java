@@ -30,19 +30,38 @@ public class OsSchemaInfo implements NativeObject {
     private static final long nativeFinalizerPtr = nativeGetFinalizerPtr();
 
     /**
-     * Construct a {@code OsSchemaInfo} object from a given {@code OsObjectSchemaInfo} list.
+     * Constructs a {@code OsSchemaInfo} object from a given {@code OsObjectSchemaInfo} list.
      *
      * @param objectSchemaInfoList all the object schemas should be contained in this {@code OsObjectSchemaInfo}.
      */
     public OsSchemaInfo(java.util.Collection<OsObjectSchemaInfo> objectSchemaInfoList) {
+        this(nativeCreateFromList(convertObjectSchemaInfoListToNativePointerArray(objectSchemaInfoList)));
+    }
+
+    /**
+     * Constructs a {@code OsSchemaInfo} object from a given pointer to the native {@code Schema} object.
+     *
+     * @param nativePtr pointer to the native {@code Schema} object.
+     */
+    OsSchemaInfo(long nativePtr) {
+        this.nativePtr = nativePtr;
+        NativeContext.dummyContext.addReference(this);
+    }
+
+    private static long[] convertObjectSchemaInfoListToNativePointerArray(
+            java.util.Collection<OsObjectSchemaInfo> objectSchemaInfoList) {
         long[] schemaNativePointers = new long[objectSchemaInfoList.size()];
         int i = 0;
         for (OsObjectSchemaInfo info : objectSchemaInfoList) {
             schemaNativePointers[i] = info.getNativePtr();
             i++;
         }
-        this.nativePtr = nativeCreateFromList(schemaNativePointers);
-        NativeContext.dummyContext.addReference(this);
+
+        return schemaNativePointers;
+    }
+
+    public OsObjectSchemaInfo getObjectSchemaInfo(String className) {
+        return new OsObjectSchemaInfo(nativeGetObjectSchemaInfo(nativePtr, className));
     }
 
     @Override
@@ -58,4 +77,7 @@ public class OsSchemaInfo implements NativeObject {
     private static native long nativeCreateFromList(long[] objectSchemaPtrs);
 
     private static native long nativeGetFinalizerPtr();
+
+    // Throw ISE if the object schema doesn't exist.
+    private static native long nativeGetObjectSchemaInfo(long nativePtr, String className);
 }

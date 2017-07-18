@@ -695,3 +695,16 @@ JNIEXPORT jboolean JNICALL Java_io_realm_internal_SharedRealm_nativeIsAutoRefres
     CATCH_STD()
     return JNI_FALSE;
 }
+
+JNIEXPORT jlong JNICALL Java_io_realm_internal_SharedRealm_nativeGetSchemaInfo(JNIEnv* env, jclass,
+                                                                               jlong shared_realm_ptr)
+{
+    TR_ENTER_PTR(shared_realm_ptr)
+    try {
+        auto& shared_realm = *(reinterpret_cast<SharedRealm*>(shared_realm_ptr));
+        auto& schema = shared_realm->schema();
+        return reinterpret_cast<jlong>(new Schema(schema));
+    }
+    CATCH_STD()
+    return reinterpret_cast<jlong>(nullptr);
+}

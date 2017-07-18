@@ -55,13 +55,14 @@ public abstract class RealmSchema {
 
     final BaseRealm realm;
     // Cached field look up
-    private ColumnIndices columnIndices;
+    private final ColumnIndices columnIndices;
 
     /**
      * Creates a wrapper to easily manipulate the current schema of a Realm.
      */
-    RealmSchema(BaseRealm realm) {
+    RealmSchema(BaseRealm realm, ColumnIndices columnIndices) {
         this.realm = realm;
+        this.columnIndices = columnIndices;
     }
 
     /**
@@ -220,66 +221,12 @@ public abstract class RealmSchema {
         return dynamicSchema;
     }
 
-    /**
-     * Set the column index cache for this schema.
-     *
-     * @param columnIndices the column index cache
-     */
-    final void setInitialColumnIndices(ColumnIndices columnIndices) {
-        if (this.columnIndices != null) {
-            throw new IllegalStateException("An instance of ColumnIndices is already set.");
-        }
-        this.columnIndices = new ColumnIndices(columnIndices, true);
-    }
-
-    /**
-     * Set the column index cache for this schema.
-     *
-     * @param version the schema version
-     * @param columnInfoMap the column info map
-     */
-    final void setInitialColumnIndices(long version, Map<Pair<Class<? extends RealmModel>, String>, ColumnInfo> columnInfoMap) {
-        if (this.columnIndices != null) {
-            throw new IllegalStateException("An instance of ColumnIndices is already set.");
-        }
-        columnIndices = new ColumnIndices(version, columnInfoMap);
-    }
-
-    /**
-     * Updates all {@link ColumnInfo} elements in {@code columnIndices}.
-     * <p>
-     * The ColumnInfo elements are shared between all {@link RealmObject}s created by the Realm instance
-     * which owns this RealmSchema. Updating them also means updating indices information in those {@link RealmObject}s.
-     *
-     * @param schemaVersion new schema version.
-     */
-    void updateColumnIndices(ColumnIndices schemaVersion) {
-        columnIndices.copyFrom(schemaVersion);
-    }
-
     private boolean isProxyClass(Class<? extends RealmModel> modelClass, Class<? extends RealmModel> testee) {
         return modelClass.equals(testee);
     }
 
-    /**
-     * Sometimes you need ColumnIndicies that can be passed between threads.
-     * Setting the mutable flag false creates an instance that is effectively final.
-     *
-     * @return a new, thread-safe copy of this Schema's ColumnIndices.
-     * @see ColumnIndices for the effectively final contract.
-     */
-    final ColumnIndices getImmutableColumnIndicies() {
-        checkIndices();
-        return new ColumnIndices(columnIndices, false);
-    }
-
     final boolean haveColumnInfo() {
         return columnIndices != null;
-    }
-
-    final long getSchemaVersion() {
-        checkIndices();
-        return columnIndices.getSchemaVersion();
     }
 
     final ColumnInfo getColumnInfo(Class<? extends RealmModel> clazz) {

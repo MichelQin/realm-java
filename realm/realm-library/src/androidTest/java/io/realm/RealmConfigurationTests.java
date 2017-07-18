@@ -397,7 +397,7 @@ public class RealmConfigurationTests {
                 .directory(configFactory.getRoot())
                 .schemaVersion(42)
                 .build());
-        assertEquals(42, realm.getSchema().getSchemaVersion());
+        assertEquals(42, realm.getVersion());
     }
 
     @Test

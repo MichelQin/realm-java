@@ -33,18 +33,32 @@ public class Property implements NativeObject {
     private static final long nativeFinalizerPtr = nativeGetFinalizerPtr();
 
     Property(String name, RealmFieldType type, boolean isPrimary, boolean isIndexed, boolean isRequired) {
-        this.nativePtr = nativeCreatePersistedProperty(name, type.getNativeValue(), isPrimary, isIndexed, !isRequired);
-        NativeContext.dummyContext.addReference(this);
+        this(nativeCreatePersistedProperty(name, type.getNativeValue(), isPrimary, isIndexed, !isRequired));
     }
 
     Property(String name, RealmFieldType type, String linkedClassName) {
-        this.nativePtr = nativeCreatePersistedLinkProperty(name, type.getNativeValue(), linkedClassName);
-        NativeContext.dummyContext.addReference(this);
+        this(nativeCreatePersistedLinkProperty(name, type.getNativeValue(), linkedClassName));
     }
 
     Property(String name, String sourceClassName, String sourceFieldName) {
-        this.nativePtr = nativeCreateComputedLinkProperty(name, sourceClassName, sourceFieldName);
+        this(nativeCreateComputedLinkProperty(name, sourceClassName, sourceFieldName));
+    }
+
+    Property(long nativePtr) {
+        this.nativePtr = nativePtr;
         NativeContext.dummyContext.addReference(this);
+    }
+
+    public RealmFieldType getType() {
+        return RealmFieldType.fromNativeValue(nativeGetType(nativePtr));
+    }
+
+    public String getLinkedObjectName() {
+        return nativeGetLinkedObjectName(nativePtr);
+    }
+
+    public long getColumnIndex() {
+        return nativeGetColumnIndex(nativePtr);
     }
 
     @Override
@@ -57,6 +71,8 @@ public class Property implements NativeObject {
         return nativeFinalizerPtr;
     }
 
+    private static native long nativeGetFinalizerPtr();
+
     private static native long nativeCreatePersistedProperty(
             String name, int type, boolean isPrimary, boolean isIndexed, boolean isNullable);
 
@@ -65,5 +81,10 @@ public class Property implements NativeObject {
     private static native long nativeCreateComputedLinkProperty(
             String name, String sourceClassName, String sourceFieldName);
 
-    private static native long nativeGetFinalizerPtr();
+    private static native int nativeGetType(long nativePtr);
+
+    private static native long nativeGetColumnIndex(long nativePtr);
+
+    // Return null if the property is not OBJECT, LIST or LINKING_OBJECT type.
+    private static native String nativeGetLinkedObjectName(long nativePtr);
 }

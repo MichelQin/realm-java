@@ -3880,6 +3880,44 @@ public class RealmTests {
     }
 
     @Test
+    @RunTestInLooperThread
+    public void nonAdditiveSchemaChangesWhenTypedRealmExists() throws InterruptedException {
+        final RealmConfiguration realmConfig = looperThread.createConfigurationBuilder()
+                .schema(StringOnly.class)
+                .build();
+        Realm realm = Realm.getInstance(realmConfig);
+        /*
+        realm.addChangeListener(new RealmChangeListener<Realm>() {
+            @Override
+            public void onChange(Realm realm) {
+                fail();
+            }
+        });
+        */
+
+        looperThread.addTestRealm(realm);
+
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Realm realm = Realm.getInstance(realmConfig);
+                realm.executeTransaction(new Realm.Transaction() {
+                    @Override
+                    public void execute(Realm realm) {
+                        RealmObjectSchema stringOnlySchema = realm.getSchema().get(StringOnly.CLASS_NAME);
+                        //RealmObjectSchema stringOnlySchema = realm.getSchema().create("TEST");
+                        stringOnlySchema.removeField(StringOnly.FIELD_CHARS);
+                        stringOnlySchema.addField(StringOnly.FIELD_CHARS + "MORE", String.class);
+                    }
+                });
+            }
+        });
+        thread.start();
+        thread.join();
+//        realm.refresh();
+    }
+
+    @Test
     public void schemaIndexCacheIsUpdatedAfterSchemaChange() {
         final AtomicLong nameIndexNew = new AtomicLong(-1L);
 

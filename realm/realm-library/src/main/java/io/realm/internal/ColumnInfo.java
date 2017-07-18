@@ -67,10 +67,14 @@ public abstract class ColumnInfo {
         public final RealmFieldType columnType;
         public final String linkTable;
 
-        ColumnDetails(long columnIndex, RealmFieldType columnType, String srcTable) {
+        private ColumnDetails(long columnIndex, RealmFieldType columnType, String srcTable) {
             this.columnIndex = columnIndex;
             this.columnType = columnType;
             this.linkTable = srcTable;
+        }
+
+        ColumnDetails(Property property) {
+            this(property.getColumnIndex(), property.getType(), property.getLinkedObjectName());
         }
 
         @Override
@@ -217,23 +221,14 @@ public abstract class ColumnInfo {
      * <p>
      * No validation done here.  Presuming that all necessary validation takes place in {@code Proxy.validateTable}.
      *
-     * @param table The table to search for the column.
      * @param columnName The name of the column whose index is sought.
-     * @param columnType Type RealmType of the column.
+     * @param objectSchemaInfo the {@link OsObjectSchemaInfo} for the corresponding {@code RealmObject}.
      * @return the index of the column in the table
      */
-    @SuppressWarnings("unused")
-    protected final long addColumnDetails(Table table, String columnName, RealmFieldType columnType) {
-        long columnIndex = table.getColumnIndex(columnName);
-        if (columnIndex >= 0) {
-            String linkedTableName = ((columnType != RealmFieldType.OBJECT) && (columnType != RealmFieldType.LIST))
-                    ? null
-                    : table.getLinkTarget(columnIndex).getClassName();
-
-            indicesMap.put(columnName, new ColumnDetails(columnIndex, columnType, linkedTableName));
-        }
-
-        return columnIndex;
+    protected final long addColumnDetails(String columnName, OsObjectSchemaInfo objectSchemaInfo) {
+        Property property = objectSchemaInfo.getProperty(columnName);
+        indicesMap.put(columnName, new ColumnDetails(property));
+        return property.getColumnIndex();
     }
 
     /**
@@ -241,15 +236,13 @@ public abstract class ColumnInfo {
      * <b>For use only by subclasses!</b>.
      * Must be called from within the subclass constructor, to maintain the effectively-final contract.
      *
-     * @param realm The shared realm.
+     * @param schemaInfo the {@link OsSchemaInfo} of the corresponding {@code Realm} instance.
      * @param columnName The name of the backlink column.
      * @param sourceTableName The name of the backlink source class.
      * @param sourceColumnName The name of the backlink source field.
      */
-    @SuppressWarnings("unused")
-    protected final void addBacklinkDetails(SharedRealm realm, String columnName, String sourceTableName, String sourceColumnName) {
-        Table sourceTable = realm.getTable(Table.getTableNameForClass(sourceTableName));
-        long columnIndex = sourceTable.getColumnIndex(sourceColumnName);
+    protected final void addBacklinkDetails(OsSchemaInfo schemaInfo, String columnName, String sourceTableName, String sourceColumnName) {
+        long columnIndex = schemaInfo.getObjectSchemaInfo(sourceTableName).getProperty(sourceColumnName).getColumnIndex();
         indicesMap.put(columnName, new ColumnDetails(columnIndex, RealmFieldType.LINKING_OBJECTS, sourceTableName));
     }
 

@@ -444,6 +444,13 @@ public final class SharedRealm implements Closeable, NativeObject {
         }
     }
 
+    /**
+     * @return the {@link OsSchemaInfo} of this {@code SharedRealm}.
+     */
+    public OsSchemaInfo getSchemaInfo() {
+        return new OsSchemaInfo(nativeGetSchemaInfo(nativePtr));
+    }
+
     // addIterator(), detachIterators() and invalidateIterators() are used to make RealmResults stable iterators work.
     // The iterator will iterate on a snapshot Results if it is accessed inside a transaction.
     // See https://github.com/realm/realm-java/issues/3883 for more information.
@@ -594,4 +601,6 @@ public final class SharedRealm implements Closeable, NativeObject {
     private static native boolean nativeIsAutoRefresh(long nativePtr);
 
     private static native long nativeGetFinalizerPtr();
+
+    private static native long nativeGetSchemaInfo(long nativePtr);
 }

@@ -81,6 +81,7 @@ public class RealmProxyMediatorGenerator {
                 "io.realm.internal.RealmProxyMediator",
                 "io.realm.internal.Row",
                 "io.realm.internal.Table",
+                "io.realm.internal.OsSchemaInfo",
                 "io.realm.internal.OsObjectSchemaInfo",
                 "org.json.JSONException",
                 "org.json.JSONObject"
@@ -98,7 +99,7 @@ public class RealmProxyMediatorGenerator {
 
         emitFields(writer);
         emitGetExpectedObjectSchemaInfoMap(writer);
-        emitValidateTableMethod(writer);
+        emitCreateColumnInfoMethod(writer);
         emitGetFieldNamesMethod(writer);
         emitGetTableNameMethod(writer);
         emitNewInstanceMethod(writer);
@@ -147,20 +148,20 @@ public class RealmProxyMediatorGenerator {
         writer.emitEmptyLine();
     }
 
-    private void emitValidateTableMethod(JavaWriter writer) throws IOException {
+    private void emitCreateColumnInfoMethod(JavaWriter writer) throws IOException {
         writer.emitAnnotation("Override");
         writer.beginMethod(
                 "ColumnInfo",
-                "validateTable",
+                "createColumnInfo",
                 EnumSet.of(Modifier.PUBLIC),
                 "Class<? extends RealmModel>", "clazz", // Argument type & argument name
-                "SharedRealm", "sharedRealm",
-                "boolean", "allowExtraColumns"
+                "OsSchemaInfo", "osSchemaInfo"
         );
+
         emitMediatorShortCircuitSwitch(new ProxySwitchStatement() {
             @Override
             public void emitStatement(int i, JavaWriter writer) throws IOException {
-                writer.emitStatement("return %s.validateTable(sharedRealm, allowExtraColumns)",
+                writer.emitStatement("return %s.createColumnInfo(osSchemaInfo)",
                         qualifiedProxyClasses.get(i));
             }
         }, writer);

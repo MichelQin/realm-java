@@ -89,16 +89,7 @@ abstract class BaseRealm implements Closeable {
         this.configuration = configuration;
         this.realmCache = null;
 
-        this.sharedRealm = SharedRealm.getInstance(configuration,
-                !(this instanceof Realm) ? null :
-                        new SharedRealm.SchemaVersionListener() {
-                            @Override
-                            public void onSchemaVersionChanged(long currentVersion) {
-                                if (realmCache != null) {
-                                    realmCache.updateSchemaCache((Realm) BaseRealm.this);
-                                }
-                            }
-                        }, true);
+        this.sharedRealm = SharedRealm.getInstance(configuration, null, true);
         this.shouldCloseSharedRealm = true;
     }
 
